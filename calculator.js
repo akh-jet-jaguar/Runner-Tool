@@ -3,6 +3,8 @@ const RACES = [['1 mile', MILE_KM], ['5K', 5], ['10K', 10], ['Half marathon', 21
 const $ = id => document.getElementById(id);
 let mode = 'pace';
 let secondsPerKm = 300;
+let primaryUnits = 'metric';
+try { if (localStorage.getItem('stride-primary-units') === 'imperial') primaryUnits = 'imperial'; } catch {}
 
 function parseTime(value, pace = false) {
   const text = value.trim();
@@ -34,10 +36,15 @@ function render(preserveValue = false) {
   }
   const valid = Number.isFinite(secondsPerKm) && secondsPerKm > 0;
   $('error').textContent = !valid ? (mode === 'speed' ? 'Enter a valid speed greater than zero.' : 'Enter a valid positive time and distance. Seconds must be under 60.') : !Number.isFinite(custom) ? 'Enter a positive custom distance.' : '';
-  $('primary').textContent = valid ? `${formatTime(secondsPerKm)} / km` : '— / km';
-  $('secondary').textContent = valid ? `${formatTime(secondsPerKm * MILE_KM)} / mile` : '— / mile';
-  $('speed-primary').textContent = valid ? `${(3600 / secondsPerKm).toFixed(2)} km/h` : '— km/h';
-  $('speed-secondary').textContent = valid ? `${(3600 / secondsPerKm / MILE_KM).toFixed(2)} mph` : '— mph';
+  const imperial = primaryUnits === 'imperial';
+  const paceMetric = `${valid ? formatTime(secondsPerKm) : '—'} / km`;
+  const paceImperial = `${valid ? formatTime(secondsPerKm * MILE_KM) : '—'} / mile`;
+  const speedMetric = `${valid ? (3600 / secondsPerKm).toFixed(2) : '—'} km/h`;
+  const speedImperial = `${valid ? (3600 / secondsPerKm / MILE_KM).toFixed(2) : '—'} mph`;
+  $('primary').textContent = imperial ? paceImperial : paceMetric;
+  $('secondary').textContent = imperial ? paceMetric : paceImperial;
+  $('speed-primary').textContent = imperial ? speedImperial : speedMetric;
+  $('speed-secondary').textContent = imperial ? speedMetric : speedImperial;
   $('races').innerHTML = RACES.map(([name, km]) => `<tr><td>${name}<small>${Number(km.toFixed(4))} km · ${Number((km / MILE_KM).toFixed(3))} mi</small></td><td>${valid ? formatTime(secondsPerKm * km, true) : '—'}</td></tr>`).join('');
   $('custom-result').textContent = valid && Number.isFinite(custom) ? `${Number(custom.toFixed(3))} km / ${Number((custom / MILE_KM).toFixed(3))} mi → ${formatTime(secondsPerKm * custom, true)}` : '—';
 }
@@ -67,4 +74,26 @@ for (const next of ['pace', 'speed', 'time']) $(`${next}-tab`).addEventListener(
   for (const tab of ['pace', 'speed', 'time']) $(`${tab}-tab`).setAttribute('aria-selected', String(tab === next));
   render(next !== 'time');
 });
-render();
+function applyPrimaryUnits() {
+  const distance = customKm();
+  const imperial = primaryUnits === 'imperial';
+  for (const [id, preferred] of [['pace-unit', imperial ? 'mi' : 'km'], ['speed-unit', imperial ? 'mph' : 'kmh'], ['distance-unit', imperial ? 'mi' : 'km']]) {
+    const select = $(id);
+    const option = Array.from(select.options).find(option => option.value === preferred);
+    select.prepend(option);
+    select.value = preferred;
+  }
+  $('primary-units').value = primaryUnits;
+  if (Number.isFinite(secondsPerKm) && secondsPerKm > 0) {
+    $('pace').value = formatTime(secondsPerKm * (imperial ? MILE_KM : 1));
+    $('speed').value = (3600 / secondsPerKm / (imperial ? MILE_KM : 1)).toFixed(2);
+  }
+  if (Number.isFinite(distance)) $('distance').value = String(Number((distance / (imperial ? MILE_KM : 1)).toFixed(8)));
+  render(true);
+}
+$('primary-units').addEventListener('change', () => {
+  primaryUnits = $('primary-units').value;
+  try { localStorage.setItem('stride-primary-units', primaryUnits); } catch {}
+  applyPrimaryUnits();
+});
+applyPrimaryUnits();
