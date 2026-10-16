@@ -48,7 +48,39 @@ function render(preserveValue = false) {
   $('races').innerHTML = RACES.map(([name, km]) => `<tr><td>${name}<small>${Number(km.toFixed(4))} km · ${Number((km / MILE_KM).toFixed(3))} mi</small></td><td>${valid ? formatTime(secondsPerKm * km, true) : '—'}</td></tr>`).join('');
   $('custom-result').textContent = valid && Number.isFinite(custom) ? `${Number(custom.toFixed(3))} km / ${Number((custom / MILE_KM).toFixed(3))} mi → ${formatTime(secondsPerKm * custom, true)}` : '—';
 }
-for (const id of ['pace', 'speed', 'finish', 'race', 'distance', 'distance-unit']) $(id).addEventListener('input', render);
+// Treat numeric entry as MMSS for pace and HHMMSS (or MMSS) for finish time.
+function formatTimeDigits(value, finish = false) {
+  const digits = value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!digits) return '';
+  const padded = digits.padStart(3, '0');
+  const seconds = padded.slice(-2);
+  const minutes = padded.slice(0, -2);
+  if (!finish || minutes.length <= 2) return `${minutes}:${seconds}`;
+  return `${minutes.slice(0, -2)}:${minutes.slice(-2)}:${seconds}`;
+}
+for (const id of ['pace', 'finish']) {
+  const input = $(id);
+  input.addEventListener('beforeinput', event => {
+    const { selectionStart: start, selectionEnd: end, value } = input;
+    if (start !== end) return;
+    // Deleting a separator also deletes the neighboring digit, so it cannot trap the cursor.
+    if (event.inputType === 'deleteContentBackward' && value[start - 1] === ':') input.setSelectionRange(Math.max(0, start - 2), end);
+    if (event.inputType === 'deleteContentForward' && value[start] === ':') input.setSelectionRange(start, Math.min(value.length, end + 2));
+  });
+  input.addEventListener('input', () => {
+    const digitsAfterCursor = input.value.slice(input.selectionStart).replace(/\D/g, '').length;
+    input.value = formatTimeDigits(input.value, id === 'finish');
+    let cursor = input.value.length;
+    let remaining = digitsAfterCursor;
+    while (cursor > 0 && remaining > 0) {
+      cursor--;
+      if (/\d/.test(input.value[cursor])) remaining--;
+    }
+    input.setSelectionRange(cursor, cursor);
+    render();
+  });
+}
+for (const id of ['speed', 'race', 'distance', 'distance-unit']) $(id).addEventListener('input', render);
 $('pace-unit').addEventListener('change', () => {
   if (Number.isFinite(secondsPerKm) && secondsPerKm > 0) {
     const minutes = secondsPerKm * ($('pace-unit').value === 'mi' ? MILE_KM : 1) / 60;
