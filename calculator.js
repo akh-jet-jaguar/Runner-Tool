@@ -35,7 +35,14 @@ function render(preserveValue = false) {
   else secondsPerKm = parseTime($('finish').value) / ($('race').value === 'custom' ? custom : Number($('race').value));
   }
   const valid = Number.isFinite(secondsPerKm) && secondsPerKm > 0;
-  $('error').textContent = !valid ? (mode === 'speed' ? 'Enter a valid speed greater than zero.' : 'Enter a valid positive time and distance. Seconds must be under 60.') : !Number.isFinite(custom) ? 'Enter a positive custom distance.' : '';
+  if (valid) {
+    if (mode !== 'pace') $('pace').value = formatTime(secondsPerKm * ($('pace-unit').value === 'mi' ? MILE_KM : 1));
+    if (mode !== 'speed') $('speed').value = (3600 / secondsPerKm / ($('speed-unit').value === 'mph' ? MILE_KM : 1)).toFixed(2);
+    const raceKm = $('race').value === 'custom' ? custom : Number($('race').value);
+    if (mode !== 'time' && Number.isFinite(raceKm) && raceKm > 0) $('finish').value = formatTime(secondsPerKm * raceKm, true);
+  }
+  const activeInput = $(mode === 'pace' ? 'pace' : mode === 'speed' ? 'speed' : 'finish').value.trim();
+  $('error').textContent = !valid && activeInput ? (mode === 'speed' ? 'Enter a valid speed greater than zero.' : 'Enter a valid positive time and distance. Seconds must be under 60.') : !Number.isFinite(custom) && $('distance').value !== '' ? 'Enter a positive custom distance.' : '';
   const imperial = primaryUnits === 'imperial';
   const paceMetric = `${valid ? formatTime(secondsPerKm) : '—'} / km`;
   const paceImperial = `${valid ? formatTime(secondsPerKm * MILE_KM) : '—'} / mile`;
@@ -104,7 +111,7 @@ for (const next of ['pace', 'speed', 'time']) $(`${next}-tab`).addEventListener(
   $('speed-fields').hidden = next !== 'speed';
   $('time-fields').hidden = next !== 'time';
   for (const tab of ['pace', 'speed', 'time']) $(`${tab}-tab`).setAttribute('aria-selected', String(tab === next));
-  render(next !== 'time');
+  render(Number.isFinite(secondsPerKm) && secondsPerKm > 0);
 });
 function applyPrimaryUnits() {
   const distance = customKm();
@@ -129,3 +136,10 @@ $('primary-units').addEventListener('change', () => {
   applyPrimaryUnits();
 });
 applyPrimaryUnits();
+
+$('clear-values').addEventListener('click', () => {
+  for (const id of ['pace', 'speed', 'finish', 'distance']) $(id).value = '';
+  secondsPerKm = NaN;
+  render(true);
+  $(mode === 'pace' ? 'pace' : mode === 'speed' ? 'speed' : 'finish').focus();
+});
