@@ -35,7 +35,8 @@ function render(preserveValue = false) {
   else secondsPerKm = parseTime($('finish').value) / ($('race').value === 'custom' ? custom : Number($('race').value));
   }
   const valid = Number.isFinite(secondsPerKm) && secondsPerKm > 0;
-  $('error').textContent = !valid ? (mode === 'speed' ? 'Enter a valid speed greater than zero.' : 'Enter a valid positive time and distance. Seconds must be under 60.') : !Number.isFinite(custom) ? 'Enter a positive custom distance.' : '';
+  const activeInput = $(mode === 'pace' ? 'pace' : mode === 'speed' ? 'speed' : 'finish').value.trim();
+  $('error').textContent = !valid && activeInput ? (mode === 'speed' ? 'Enter a valid speed greater than zero.' : 'Enter a valid positive time and distance. Seconds must be under 60.') : !Number.isFinite(custom) && $('distance').value !== '' ? 'Enter a positive custom distance.' : '';
   const imperial = primaryUnits === 'imperial';
   const paceMetric = `${valid ? formatTime(secondsPerKm) : '—'} / km`;
   const paceImperial = `${valid ? formatTime(secondsPerKm * MILE_KM) : '—'} / mile`;
@@ -129,3 +130,10 @@ $('primary-units').addEventListener('change', () => {
   applyPrimaryUnits();
 });
 applyPrimaryUnits();
+
+$('clear-values').addEventListener('click', () => {
+  for (const id of ['pace', 'speed', 'finish', 'distance']) $(id).value = '';
+  secondsPerKm = NaN;
+  render(true);
+  $(mode === 'pace' ? 'pace' : mode === 'speed' ? 'speed' : 'finish').focus();
+});

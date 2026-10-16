@@ -13,7 +13,7 @@
 <p>Convert between pace and speed, and see where it takes you.</p>
 <div class="layout">
 <section class="card" aria-label="Calculator inputs">
-<label for="primary-units" style="margin-top:0">Primary units</label><select id="primary-units" style="margin-bottom:20px"><option value="metric">Metric · kilometers</option><option value="imperial">Imperial · miles</option></select>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><label for="primary-units" style="margin:0">Primary units</label><button id="clear-values" type="button" style="font-size:13px;padding:10px 12px;border:1px solid #cbd5ca" aria-label="Clear all entered values">Clear</button></div><select id="primary-units" style="margin-bottom:20px"><option value="metric">Metric · kilometers</option><option value="imperial">Imperial · miles</option></select>
 <div class="tabs" role="tablist" aria-label="Calculation mode"><button id="pace-tab" role="tab" aria-selected="true">From pace</button><button id="speed-tab" role="tab" aria-selected="false">From speed</button><button id="time-tab" role="tab" aria-selected="false">From finish time</button></div>
 <div id="pace-fields"><label for="pace">Running pace</label><div class="row"><input id="pace" value="5:00" inputmode="numeric" aria-describedby="pace-help"><select id="pace-unit" aria-label="Pace unit"><option value="km">min / km</option><option value="mi">min / mile</option></select></div><p id="pace-help" class="helper">Type 530 for 5:30. Colons are added automatically.</p></div>
 <div id="speed-fields" hidden><label for="speed">Running speed</label><div class="row"><input id="speed" type="number" min="0" step="any" value="12" inputmode="decimal" aria-describedby="speed-help"><select id="speed-unit" aria-label="Speed unit"><option value="kmh">km/h</option><option value="mph">mph</option></select></div><p id="speed-help" class="helper">Enter a positive speed, e.g. 12 km/h or 7.5 mph.</p></div>
@@ -26,5 +26,5 @@
 <p class="note">Times assume you hold the same pace for the entire distance. They don’t account for fatigue, terrain, or race conditions.</p></section>
 </div><footer>Made for the miles ahead. · 1 mile = 1.609344 kilometers</footer>
 </main>
-<script src="calculator.js?v=3"></script>
+<script src="calculator.js?v=4"></script>
 </html>
